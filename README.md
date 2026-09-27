@@ -127,3 +127,29 @@ Covers the login form, the add-transaction form (validation + successful submit)
 - Recurring transactions are generated lazily (on login/API access), not by a background scheduler — fine for a personal app, not for guaranteed same-day generation if the user doesn't log in.
 - No file storage service wired up yet for the transaction attachment field — `attachmentUrl` accepts a URL string only.
 - CSV export loads matching rows into memory rather than streaming, which is fine at personal-use scale but not for very large histories.
+
+## Screenshots
+
+**Login**
+![Login](screenshots/login.png)
+
+**Dashboard**
+![Dashboard](screenshots/dashboard.png)
+
+**Add Transaction**
+![Add Transaction](screenshots/add-transaction.png)
+
+**Transactions**
+![Transactions](screenshots/transactions.png)
+
+**Analytics**
+![Analytics](screenshots/analytics.png)
+
+**Accounts & Wallets**
+![Accounts](screenshots/accounts.png)
+
+**Budgets**
+![Budgets](screenshots/budgets.png)
+
+**Savings Goals**
+![Goals](screenshots/goals.png)
