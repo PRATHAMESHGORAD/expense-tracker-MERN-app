@@ -30,14 +30,14 @@ const getCurrentBudget = asyncHandler(async (req, res) => {
     { $match: { user: req.user._id, type: "expense", date: { $gte: monthStart, $lte: monthEnd } } },
     { $group: { _id: "$category", spent: { $sum: "$amount" } } },
   ]);
-  const spendMap = new Map(categorySpend.map((c) => [c._id, c.spent]));
+    const spendMap = new Map(categorySpend.map((c) => [c._id.toLowerCase(), c.spent]));
   const totalSpent = categorySpend.reduce((sum, c) => sum + c.spent, 0);
 
   const overallPercent = budget.overallLimit ? Math.round((totalSpent / budget.overallLimit) * 100) : 0;
 
   const monthName = monthStart.toLocaleString("default", { month: "long" });
   const categories = Array.from(budget.categoryLimits.entries()).map(([category, limit]) => {
-    const spent = spendMap.get(category) || 0;
+        const spent = spendMap.get(category.toLowerCase()) || 0;
     const percent = limit ? Math.round((spent / limit) * 100) : 0;
     return { category, limit, spent, percent, warning: warningFor(percent) };
   });
@@ -106,4 +106,26 @@ const setCategoryBudget = asyncHandler(async (req, res) => {
   res.json(budget);
 });
 
-module.exports = { getCurrentBudget, setOverallBudget, setCategoryBudget };
+const deleteCategoryBudget = asyncHandler(async (req, res) => {
+  const { category } = req.params;
+  if (!category || /[.$]/.test(category)) {
+    res.status(400);
+    throw new Error("Invalid category name");
+  }
+
+  const now = new Date();
+  const budget = await Budget.findOneAndUpdate(
+    { user: req.user._id, month: now.getMonth() + 1, year: now.getFullYear() },
+    { $unset: { [`categoryLimits.${category}`]: "" } },
+    { new: true }
+  );
+
+  if (!budget) {
+    res.status(404);
+    throw new Error("Budget not found");
+  }
+
+  res.json(budget);
+});
+
+module.exports = { getCurrentBudget, setOverallBudget, setCategoryBudget, deleteCategoryBudget };

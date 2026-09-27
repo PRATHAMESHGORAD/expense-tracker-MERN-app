@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import { LoadingState, ErrorState } from "../components/StateMessages";
+import { useData } from "../context/DataContext";
 
 function formatMoney(n) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n || 0);
@@ -14,6 +15,7 @@ const WARNING_LABELS = {
 };
 
 export default function Budgets() {
+  const { categories, refreshCategories } = useData();
   const [budget, setBudget] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,7 +39,8 @@ export default function Budgets() {
 
   useEffect(() => {
     load();
-  }, []);
+    refreshCategories();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveOverall = async (e) => {
     e.preventDefault();
@@ -65,7 +68,16 @@ export default function Budgets() {
       setSaving(false);
     }
   };
-
+  const deleteCategoryBudget = async (category) => {
+    if (!window.confirm(`Remove the budget limit for "${category}"?`)) return;
+    setSaving(true);
+    try {
+      await api.delete(`/budgets/category/${encodeURIComponent(category)}`);
+      await load();
+    } finally {
+      setSaving(false);
+    }
+  };
   if (loading) return <LoadingState />;
   if (error) return <ErrorState label={error} />;
 
@@ -118,10 +130,18 @@ export default function Budgets() {
           <ul className="category-budget-list">
             {budget.categories.map((c) => (
               <li key={c.category}>
-                <div className="category-budget-row">
+                  <div className="category-budget-row">
                   <span>{c.category}</span>
                   <span>
                     {formatMoney(c.spent)} / {formatMoney(c.limit)}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-small danger"
+                      style={{ marginLeft: "0.6rem" }}
+                      onClick={() => deleteCategoryBudget(c.category)}
+                    >
+                      Delete
+                    </button>
                   </span>
                 </div>
                 <div className="progress-bar">
@@ -137,11 +157,17 @@ export default function Budgets() {
         )}
 
         <form onSubmit={saveCategory} className="inline-form">
-          <input
+            <input
+            list="budget-category-options"
             placeholder="Category (e.g. Food)"
             value={categoryInput.category}
             onChange={(e) => setCategoryInput({ ...categoryInput, category: e.target.value })}
           />
+          <datalist id="budget-category-options">
+            {[...new Set(categories.filter((c) => c.type === "expense").map((c) => c.name))].map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
           <input
             type="number"
             step="0.01"
