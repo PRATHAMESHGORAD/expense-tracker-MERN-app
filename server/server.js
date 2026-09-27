@@ -14,6 +14,9 @@ const goalRoutes = require("./routes/goalRoutes");
 
 const app = express();
 
+
+app.set("trust proxy", 1);
+
 // Only allow the configured frontend origin(s), not "*", since we send credentials-bearing
 // Authorization headers.
 const allowedOrigins = (process.env.CLIENT_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean);
